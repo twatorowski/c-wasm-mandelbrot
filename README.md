@@ -6,6 +6,9 @@ neat images of Mandelbrot Set fractal.
 The fractal can be drawm in two modes: pure JS and WebAssembly (WASM). JS is 
 enabled by default, to switch to WASM add `?wasm` at the end of the url.
 
+You can test is here as well: 
+* JS Version: https://twatorowski.github.io/c-wasm-mandelbrot/
+* WASM Version: https://twatorowski.github.io/c-wasm-mandelbrot/?wasm
 
 ## How to build
 
