@@ -10,6 +10,8 @@ You can test is here as well:
 * JS Version: https://twatorowski.github.io/c-wasm-mandelbrot/
 * WASM Version: https://twatorowski.github.io/c-wasm-mandelbrot/?wasm
 
+Use mouse wheel to zoom-in/zoom-out :-)
+
 ## How to build
 
 Wasm code is built from c code using clang/llvm. If you don't have clang and 
