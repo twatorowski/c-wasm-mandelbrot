@@ -1,0 +1,10 @@
+{
+    "C_Cpp.default.systemIncludePath": [
+        ".",
+        "./.includes/"
+    ],
+    "C_Cpp.default.includePath": [
+        ".",
+        "./.includes/"
+    ],
+}
