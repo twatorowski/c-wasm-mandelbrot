@@ -3,11 +3,49 @@ const ZOOM_FACTOR = 1.5;
 /* best looking aspect ratio ( width / height ) */
 const ASPECT_RATIO = 4 / 2;
 
+/* color PALETTE used for displaying the set. this is a specification of a 
+ * evenly-spaced linear gradient. colors are given as 0xrrggbbaa */
+const PALETTE = [
+    [ 0x14, 0x0b, 0x34, 0xff ],
+    [ 0x83, 0x3a, 0xb4, 0xff ],
+    [ 0xc1, 0x35, 0x84, 0xff ],
+    [ 0xe1, 0x30, 0x6c, 0xff ],
+    [ 0xfd, 0x1d, 0x1d, 0xff ],
+    [ 0xf5, 0x60, 0x40, 0xff ],
+    [ 0xf7, 0x77, 0x37, 0xff ],
+    [ 0xfc, 0xaf, 0x45, 0xff ],
+    [ 0xff, 0xdc, 0x80, 0xff ],
+];
+
 /* this will hold the wasm instance, once it is initialized */
 let wasm;
 /* current zoom level */
 let zoom = 0.8
 
+
+/**
+ * Returns a RGBA color for 
+ * @param {number} value from 0.0 to 1.0 
+ * @returns Array of 4 values
+ */
+function gimmeColorforValue(value) {
+    /* easy cases */
+    if (value <= 0.0) return PALETTE[0];
+    if (value >= 1.0) return PALETTE[PALETTE.length - 1];
+    /* get the index of the color for this value */
+    const div = value / (1.0 / (PALETTE.length - 1));
+    const idx = Math.floor(div), t = div % 1.0;
+
+
+    /* return the linear interpolation between PALETTE 
+     * entries */
+    return [
+        PALETTE[idx][0] * (1 - t) + PALETTE[idx + 1][0] * t,
+        PALETTE[idx][1] * (1 - t) + PALETTE[idx + 1][1] * t,
+        PALETTE[idx][2] * (1 - t) + PALETTE[idx + 1][2] * t,
+        PALETTE[idx][3] * (1 - t) + PALETTE[idx + 1][3] * t,
+    ]
+}
 
 /**
  * Draws a given section of mandelbrot set into the image data
@@ -29,12 +67,12 @@ function drawMandelbrotJS(imageData, s_re, s_im, e_re, e_im) {
     for (let y = 0; y < h; y++) {
         /* compute the imaginary part of coordinate of the point that we try 
          * to draw */
-        const p_im = s_im + (e_im - s_im) * (h - y - 1) / h;
+        let c_im = s_im + (e_im - s_im) * (h - y - 1) / h;
         /* x coordinate grows the same way as the cartesian coordinates */
         for (let x = 0; x < w; x++) {
             /* here we assume that the equation is z_next = z^2 + p */
             /* get the coordinate of the pixel on a complex plane */
-            const p_re = s_re + (e_re - s_re) * x / w;
+            let c_re = s_re + (e_re - s_re) * x / w;
 
             /* initial conditions are z = 0 + 0i */
             var z_re = 0, z_im = 0, iter = 0;
@@ -42,8 +80,8 @@ function drawMandelbrotJS(imageData, s_re, s_im, e_re, e_im) {
             /* check if applying the formula causes the z to go to inf */
             for (iter = 0; iter < 255; iter++) {
                 /* square the zee and add the pee */
-                var znext_re = z_re * z_re - z_im * z_im + p_re;
-                var znext_im = z_re * z_im + z_im * z_re + p_im;
+                var znext_re = z_re * z_re - z_im * z_im + c_re;
+                var znext_im = z_re * z_im + z_im * z_re + c_im;
                 /* store the values */
                 z_re = znext_re;
                 z_im = znext_im;
@@ -54,12 +92,13 @@ function drawMandelbrotJS(imageData, s_re, s_im, e_re, e_im) {
                     break;
             }
             
+            /* get the corresponding color */
+            const color = gimmeColorforValue(1.0 - iter / 255)
             /* set the pixel color */
-            pixels[(y * w + x) * 4 + 0] = 0xff - iter;
-            pixels[(y * w + x) * 4 + 1] = 0xff - iter;
-            pixels[(y * w + x) * 4 + 2] = 0xff - iter;
-            /* keep tha alpha at max */
-            pixels[(y * w + x) * 4 + 3] = 0xff;
+            pixels[(y * w + x) * 4 + 0] = color[0];
+            pixels[(y * w + x) * 4 + 1] = color[1];
+            pixels[(y * w + x) * 4 + 2] = color[2];
+            pixels[(y * w + x) * 4 + 3] = color[3];
         }
     }
 }
@@ -95,11 +134,14 @@ function drawMandelbrotWASM(imageData, s_re, s_im, e_re, e_im)
         for (let x = 0; x < w; x++) {
             /* get the value from the wasm array */ 
             let val = cArray[y * w + x];
-            pixels[(y * w + x) * 4 + 0] = 0xff - val;
-            pixels[(y * w + x) * 4 + 1] = 0xff - val;
-            pixels[(y * w + x) * 4 + 2] = 0xff - val;
-            /* keep tha alpha at max */
-            pixels[(y * w + x) * 4 + 3] = 0xff;
+            
+            /* get the corresponding color */
+            const color = gimmeColorforValue(1.0 - val / 255)
+            /* apply the color to the pixel */
+            pixels[(y * w + x) * 4 + 0] = color[0];
+            pixels[(y * w + x) * 4 + 1] = color[1];
+            pixels[(y * w + x) * 4 + 2] = color[2];
+            pixels[(y * w + x) * 4 + 3] = color[3];
         }
     }
 }
